@@ -39,8 +39,13 @@ export async function POST(req: Request) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: "Você é um analista de vendas B2B." }, { role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "Analista B2B. Seja conciso." }, 
+        { role: "user", content: prompt }
+      ],
       response_format: { type: "json_object" },
+      max_tokens: 500, // Limita o tamanho da resposta para ser mais rápido
+      temperature: 0.5,
     });
 
     const analysis = JSON.parse(response.choices[0].message.content || "{}");
