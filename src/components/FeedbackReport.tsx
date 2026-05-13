@@ -24,43 +24,51 @@ interface AnalysisData {
 export default function FeedbackReport({ persona, duration, transcript, onClose, onComplete }: FeedbackReportProps) {
   const [loading, setLoading] = useState(!transcript && !onComplete);
   const [data, setData] = useState<AnalysisData | null>(null);
+  const [error, setError] = useState<boolean>(false);
   const analysisStarted = useRef(false);
 
+  async function getAnalysis() {
+    setError(false);
+    setLoading(true);
+    try {
+      const response = await fetch("/api/analyze-call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transcript,
+          personaName: persona.name,
+          personaRole: persona.role,
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Falha na análise");
+      
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      console.error("Erro ao carregar análise:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Efeito para notificar a conclusão apenas quando os dados estiverem prontos
   useEffect(() => {
-    // Se os dados já foram passados (caso do histórico), não fazemos nada
+    if (data && onComplete && !loading && !error) {
+      onComplete(data);
+    }
+  }, [data, loading, error, onComplete]);
+
+  useEffect(() => {
     if (typeof (persona as any).score !== 'undefined') {
       setData(persona as any);
       setLoading(false);
       return;
     }
 
-    // Evita múltiplas chamadas se o useEffect disparar de novo
     if (analysisStarted.current) return;
     analysisStarted.current = true;
-
-    async function getAnalysis() {
-      try {
-        const response = await fetch("/api/analyze-call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            transcript,
-            personaName: persona.name,
-            personaRole: persona.role,
-          }),
-        });
-        const result = await response.json();
-        setData(result);
-        
-        if (onComplete) {
-          onComplete(result);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar análise:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
 
     if (transcript) {
       getAnalysis();
@@ -73,23 +81,36 @@ export default function FeedbackReport({ persona, duration, transcript, onClose,
         expertTip: "Tente falar um pouco mais na próxima vez para que a IA possa analisar seu pitch."
       };
       setData(fallback);
-      if (onComplete) onComplete(fallback);
       setLoading(false);
     }
-  }, [transcript, persona, onComplete]); // Removido persona.name/role para simplificar deps
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  };
+  }, [transcript, persona]);
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-slate-50">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-slate-800">Processando sua performance...</h2>
-        <p className="text-slate-500">Nossa IA está analisando cada detalhe da sua conversa.</p>
+      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center p-4 bg-brand-dark/95 backdrop-blur-xl">
+        <Loader2 className="w-12 h-12 text-brand-cyan animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-white">Analisando sua performance...</h2>
+        <p className="text-brand-cyan/60">Nossa IA está revisando os pontos chave da conversa.</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center p-4 bg-brand-dark/95 backdrop-blur-xl text-center">
+        <div className="bg-red-500/20 p-4 rounded-full mb-6">
+          <XCircle className="w-12 h-12 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Ops! A análise falhou</h2>
+        <p className="text-white/60 mb-8 max-w-md">Não conseguimos processar o feedback desta vez. Pode ter sido uma oscilação na rede ou na API da OpenAI.</p>
+        <div className="flex gap-4">
+          <button onClick={() => { analysisStarted.current = false; getAnalysis(); }} className="px-8 py-3 bg-brand-cyan text-brand-dark font-bold rounded-xl hover:scale-105 transition-transform">
+            Tentar Novamente
+          </button>
+          <button onClick={onClose} className="px-8 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-colors">
+            Fechar
+          </button>
+        </div>
       </div>
     );
   }

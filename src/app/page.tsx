@@ -24,7 +24,11 @@ export default function Home() {
     
     if (savedUser) setUser(JSON.parse(savedUser));
     if (savedHistory) setCallHistory(JSON.parse(savedHistory));
-    if (savedPoints) setTotalPoints(parseInt(savedPoints));
+    
+    if (savedPoints) {
+      const parsed = parseInt(savedPoints);
+      setTotalPoints(isNaN(parsed) ? 0 : parsed);
+    }
     
     setIsLoading(false);
   }, []);
@@ -34,8 +38,11 @@ export default function Home() {
     setCallHistory(newHistory);
     localStorage.setItem("imersa-history", JSON.stringify(newHistory));
 
-    // Somar pontos (usando o score da call)
-    const newPoints = totalPoints + (report.score || 0);
+    // Somar pontos (usando o score da call) com proteção contra NaN
+    const score = parseInt(report.score) || 0;
+    const currentPoints = isNaN(totalPoints) ? 0 : totalPoints;
+    const newPoints = currentPoints + score;
+    
     setTotalPoints(newPoints);
     localStorage.setItem("imersa-points", newPoints.toString());
   };
