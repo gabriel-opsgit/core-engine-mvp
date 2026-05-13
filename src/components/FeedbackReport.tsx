@@ -27,6 +27,7 @@ export default function FeedbackReport({ persona, duration, transcript, onClose,
   const [error, setError] = useState<boolean>(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const analysisStarted = useRef(false);
+  const hasNotifiedParent = useRef(false);
 
   async function getAnalysis() {
     setError(false);
@@ -61,18 +62,18 @@ export default function FeedbackReport({ persona, duration, transcript, onClose,
         expertTip: "Tente ouvir mais do que falar na próxima vez para criar mais rapport."
       };
       setData(fallbackData);
-      if (onComplete) onComplete(fallbackData);
     } finally {
       setLoading(false);
     }
   }
 
-  // Efeito para notificar a conclusão apenas quando os dados estiverem prontos
+  // Efeito para notificar a conclusão apenas quando os dados estiverem prontos e APENAS UMA VEZ
   useEffect(() => {
-    if (data && onComplete && !loading && !error) {
+    if (data && onComplete && !loading && !hasNotifiedParent.current) {
+      hasNotifiedParent.current = true;
       onComplete(data);
     }
-  }, [data, loading, error, onComplete]);
+  }, [data, loading, onComplete]);
 
   useEffect(() => {
     if (typeof (persona as any).score !== 'undefined') {

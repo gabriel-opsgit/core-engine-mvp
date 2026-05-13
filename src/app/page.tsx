@@ -138,7 +138,7 @@ export default function Home() {
                   <img 
                     src={persona.avatar} 
                     alt={persona.name} 
-                    className={`w-full h-full object-cover transition-all duration-700 scale-105 group-hover:scale-110 ${persona.id === 'ricardo' ? 'object-top' : 'object-center'}`}
+                    className="w-full h-full object-cover transition-all duration-700 scale-[1.15] group-hover:scale-[1.25] object-top"
                   />
                   
                   {/* Overlay escuro constante para legibilidade absoluta */}
