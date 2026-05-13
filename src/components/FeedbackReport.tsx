@@ -85,6 +85,12 @@ export default function FeedbackReport({ persona, duration, transcript, onClose,
     }
   }, [transcript, persona]);
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center p-4 bg-brand-dark/95 backdrop-blur-xl">
